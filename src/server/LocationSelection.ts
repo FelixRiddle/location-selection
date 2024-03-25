@@ -22,6 +22,10 @@ const {
     REAL_ESTATE_KEYWORD,
 } = serversEnv;
 
+export interface LocationSelectionOptions {
+    filePath: string,
+}
+
 /**
  * Location selection
  * 
@@ -46,7 +50,13 @@ const {
  * a server has changed.
  */
 export default class LocationSelection {
-    constructor() { }
+    serverType: AppNames;
+    
+    constructor(serverType: AppNames, options: LocationSelectionOptions = {
+        filePath: new AppServer().filePath()
+    }) {
+        this.serverType = serverType;
+    }
     
     /**
      * Update location urls to those that are on the app server file
@@ -177,6 +187,53 @@ export default class LocationSelection {
         });
         
         serverInstance.on('error', (err) => {
+            // console.log(`On error`);
+            // console.error(err);
+            
+            console.log(`Server couldn't start!`);
+            console.log(`No more attempts`);
+        });
+    }
+    
+    /**
+     * Select location, but env's 'PORT' over ephemeral.
+     * 
+     * This is for clustering, so that subsequent clusters can use this function again.
+     * 
+     * @param app 
+     */
+    async selectEnvOverEphemeral(app: Express) {
+        // Check if port exists
+        const port = process.env.PORT;
+        let serverInstance: any = undefined;
+        if(port) {
+            serverInstance = app.listen(port, () => {
+                console.log(`Server running at http://localhost:${port}`);
+            });
+        } else {
+            // Select ephemeral port
+            const seeker = new PortSeeker();
+            const ephemeralPort = await seeker.firstOpen();
+            
+            // --- Slight delay between acquiring a port and starting the actual server ---
+            // But the chance of error is too tiny, rather make code to try again
+            
+            // Set the new port in app configuration
+            const srv = new AppServer();
+            const appLocation = `http://localhost:${ephemeralPort}`;
+            srv.upsertServer(this.serverType, appLocation);
+            
+            // TODO: Make other servers aware of it
+            // This involves sending a request to their server config if they have one
+            // 'GET /srv/location/update'
+            
+            // Run server
+            serverInstance = app.listen(port, () => {
+                console.log(`Server running at ${appLocation}`);
+            });
+        }
+        
+        serverInstance.on('error', (_err: any) => {
             // console.log(`On error`);
             // console.error(err);
             

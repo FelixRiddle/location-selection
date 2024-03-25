@@ -19,7 +19,7 @@ export function testGetLocationUpdated() {
     appServer.upsertServer(serverKey, serverLocation);
     
     // Update servers
-    const newLoc = new LocationSelection();
+    const newLoc = new LocationSelection(serverKey);
     newLoc.updateLocationUrls();
     
     // Fetch that one server
