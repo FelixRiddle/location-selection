@@ -228,7 +228,7 @@ export default class LocationSelection {
             // 'GET /srv/location/update'
             
             // Run server
-            serverInstance = app.listen(port, () => {
+            serverInstance = app.listen(ephemeralPort, () => {
                 console.log(`Server running at ${appLocation}`);
             });
         }
