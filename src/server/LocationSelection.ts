@@ -173,7 +173,7 @@ export default class LocationSelection {
         
         // If the server couldn't start then we will try with another port
         const serverInstance = app.listen(port, () => {
-            console.log(`Server running at http://${process.env.SERVER_HOST}:${port}`);
+            console.log(`Server running at http://localhost:${port}`);
         });
         
         serverInstance.on('error', (err) => {
