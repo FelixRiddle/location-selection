@@ -24,6 +24,7 @@ const {
 
 export interface LocationSelectionOptions {
     filePath: string,
+    cb?: (location: string) => void
 }
 
 /**
@@ -51,11 +52,20 @@ export interface LocationSelectionOptions {
  */
 export default class LocationSelection {
     serverType: AppNames;
+    options: LocationSelectionOptions;
     
+    /**
+     * 
+     * cb:
+     * The callback is called after the server is listening to.
+     * The callback receives the URL location of the server
+     */
     constructor(serverType: AppNames, options: LocationSelectionOptions = {
-        filePath: new AppServer().filePath()
+        filePath: new AppServer().filePath(),
+        cb: undefined,
     }) {
         this.serverType = serverType;
+        this.options = options;
     }
     
     /**
@@ -196,21 +206,29 @@ export default class LocationSelection {
     }
     
     /**
-     * Select location, but env's 'PORT' over ephemeral.
+     * Select from file over ephemeral
      * 
-     * This is for clustering, so that subsequent clusters can use this function again.
-     * 
-     * @param app 
+     * If this app location is already written in the config file, then use that one, otherwise
+     * use an ephemeral port.
      */
-    async selectEnvOverEphemeral(app: Express) {
-        // Check if port exists
-        const port = process.env.PORT;
+    async selectConfigOverEphemeral(app: Express) {
+        // Get location from file.
+        const appLocation = new AppServer().getServer(this.serverType);
+        
+        // Server instance will be stored here
         let serverInstance: any = undefined;
-        if(port) {
+        if(appLocation) {
+            // Forks
+            const location = new URL(appLocation);
+            const port = Number(location.port);
+            
             serverInstance = app.listen(port, () => {
-                console.log(`Server running at http://localhost:${port}`);
+                console.log(`Server running at ${appLocation}`);
+                if(this.options.cb) this.options.cb(appLocation);
             });
         } else {
+            // Primary cluster
+            
             // Select ephemeral port
             const seeker = new PortSeeker();
             const ephemeralPort = await seeker.firstOpen();
@@ -225,11 +243,68 @@ export default class LocationSelection {
             
             // TODO: Make other servers aware of it
             // This involves sending a request to their server config if they have one
-            // 'GET /srv/location/update'
+            // 'POST /srv/location/update'
+            // { appName: '' }
             
             // Run server
             serverInstance = app.listen(ephemeralPort, () => {
                 console.log(`Server running at ${appLocation}`);
+                if(this.options.cb) this.options.cb(appLocation);
+            });
+        }
+        
+        serverInstance.on('error', (_err: any) => {
+            // console.log(`On error`);
+            // console.error(err);
+            
+            console.log(`Server couldn't start!`);
+            console.log(`No more attempts`);
+        });
+    }
+    
+    /**
+     * Select location, but env's 'PORT' over ephemeral.
+     * 
+     * This is for clustering, so that subsequent clusters can use this function again.
+     * 
+     * Forks don't have main thread's environment variables.
+     * 
+     * @deprecated
+     */
+    async selectEnvOverEphemeral(app: Express) {
+        // Check if port exists
+        const port = process.env.PORT;
+        let serverInstance: any = undefined;
+        console.log(`Environment port: `, port);
+        if(port) {
+            serverInstance = app.listen(port, () => {
+                console.log(`Server running at http://localhost:${port}`);
+            });
+        } else {
+            console.log(`This should be only for the primary cluster!`);
+            // Select ephemeral port
+            const seeker = new PortSeeker();
+            const ephemeralPort = await seeker.firstOpen();
+            // process.env.PORT = `${ephemeralPort}`;
+            // console.log(`Port set, fetch it: `, process.env.PORT);
+            
+            // --- Slight delay between acquiring a port and starting the actual server ---
+            // But the chance of error is too tiny, rather make code to try again
+            
+            // Set the new port in app configuration
+            const srv = new AppServer();
+            const appLocation = `http://localhost:${ephemeralPort}`;
+            srv.upsertServer(this.serverType, appLocation);
+            
+            // TODO: Make other servers aware of it
+            // This involves sending a request to their server config if they have one
+            // 'POST /srv/location/update'
+            // { appName: '' }
+            
+            // Run server
+            serverInstance = app.listen(ephemeralPort, () => {
+                console.log(`Server running at ${appLocation}`);
+                if(this.options.cb) this.options.cb(appLocation);
             });
         }
         

@@ -70,6 +70,27 @@ export default class AppServer {
     }
     
     /**
+     * Get server
+     * 
+     * In case of failing create the file if it doesn't exists.
+     */
+    getServer(serverName: AppNames): string | undefined {
+        try {
+            // TODO: File path should change depending on a variable called 'Precision'
+            const fileData = fs.readFileSync(this.filePath(), 'utf-8');
+            const servers: AppServerType = JSON.parse(fileData);
+            
+            // Update server
+            return servers[serverName];
+        } catch(err) {
+            // Case of failing create the file why not
+            const servers: AppServerType = { };
+            
+            fs.writeFileSync(this.filePath(), JSON.stringify(servers));
+        }
+    }
+    
+    /**
      * Get file data
      */
     servers(): AppServerType {
