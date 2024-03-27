@@ -214,13 +214,15 @@ export default class LocationSelection {
      * use an ephemeral port.
      */
     async selectConfigOverEphemeral(app: Express) {
-        console.log(`Select config over ephemeral`);
-        const update = 3;
-        console.log(`Update: `, update);
+        if(this.debug) {
+            console.log(`Select config over ephemeral`);
+        }
         
         // Get location from file.
         const appLocation = new AppServer().getServer(this.serverType);
-        console.log(`App location: `, appLocation);
+        if(this.debug) {
+            console.log(`App location: `, appLocation);
+        }
         
         // Server instance will be stored here
         let serverInstance: any = undefined;
