@@ -1,4 +1,5 @@
 import { Express } from "express";
+import axios from "axios";
 
 import PortSeeker from "felixriddle.port-seeker";
 import {
@@ -241,10 +242,8 @@ export default class LocationSelection {
             const appLocation = `http://localhost:${ephemeralPort}`;
             srv.upsertServer(this.serverType, appLocation);
             
-            // TODO: Make other servers aware of it
-            // This involves sending a request to their server config if they have one
-            // 'POST /srv/location/update'
-            // { appName: '' }
+            // Make other servers aware of changes
+            await this.discover();
             
             // Run server
             serverInstance = app.listen(ephemeralPort, () => {
@@ -260,6 +259,28 @@ export default class LocationSelection {
             console.log(`Server couldn't start!`);
             console.log(`No more attempts`);
         });
+    }
+    
+    /**
+     * Tell servers to update
+     */
+    async discover() {
+        const servers: AppServerType = new AppServer().servers();
+        for(const [serverName, url] of Object.entries(servers)) {
+            // TODO: Make other servers aware of it
+            // This involves sending a request to their server config if they have one
+            // 'POST /srv/location/update'
+            // { appName: '' }
+            const instance = axios.create({
+                baseURL: url,
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+            instance.post("/srv/location/update", {
+                appName: serverName,
+            });
+        }
     }
     
     /**

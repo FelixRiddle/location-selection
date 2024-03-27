@@ -1,6 +1,6 @@
 {
   "name": "felixriddle.location-selection",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -17,6 +17,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.6.8",
     "felixriddle.configuration-mappings": "^1.0.10",
     "felixriddle.my-types": "^1.0.5",
     "felixriddle.port-seeker": "^1.0.0"
