@@ -54,6 +54,7 @@ export interface LocationSelectionOptions {
 export default class LocationSelection {
     serverType: AppNames;
     options: LocationSelectionOptions;
+    debug: boolean = false;
     
     /**
      * 
@@ -213,8 +214,13 @@ export default class LocationSelection {
      * use an ephemeral port.
      */
     async selectConfigOverEphemeral(app: Express) {
+        console.log(`Select config over ephemeral`);
+        const update = 3;
+        console.log(`Update: `, update);
+        
         // Get location from file.
         const appLocation = new AppServer().getServer(this.serverType);
+        console.log(`App location: `, appLocation);
         
         // Server instance will be stored here
         let serverInstance: any = undefined;
@@ -229,6 +235,7 @@ export default class LocationSelection {
             });
         } else {
             // Primary cluster
+            console.log(`Primary cluster`);
             
             // Select ephemeral port
             const seeker = new PortSeeker();
@@ -266,20 +273,41 @@ export default class LocationSelection {
      */
     async discover() {
         const servers: AppServerType = new AppServer().servers();
+        if(this.debug) {
+            console.log(`Servers: `, servers);
+        }
+        
+        // Send a request to every server
         for(const [serverName, url] of Object.entries(servers)) {
-            // TODO: Make other servers aware of it
-            // This involves sending a request to their server config if they have one
-            // 'POST /srv/location/update'
-            // { appName: '' }
+            if(this.debug) {
+                console.log(`Sending request to: ${url}`);
+            }
+            
+            const body = {
+                appName: serverName,
+            };
+            
+            // With axios
             const instance = axios.create({
                 baseURL: url,
                 headers: {
                     "Content-Type": "application/json"
                 }
             });
-            instance.post("/srv/location/update", {
-                appName: serverName,
-            });
+            
+            const res = await instance.post("/srv/location/update", body)
+                .then((res) => res)
+                .catch((err) => {
+                    console.log(`Axios error`);
+                    // console.error(err);
+                    
+                    console.log(`Error code: `, err.code);
+                    console.log(`Method: `, err.config.method);
+                    console.log(`Url: `, err.config.url);
+                    if(err.body) {
+                        console.log(`Response body: `, err.body);
+                    }
+                });
         }
     }
     
