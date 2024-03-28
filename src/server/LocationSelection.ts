@@ -70,6 +70,8 @@ export default class LocationSelection {
         this.options = options;
     }
     
+    // --- Environment ---
+    // Use the environment to store servers location
     /**
      * Update location urls to those that are on the app server file
      */
@@ -83,6 +85,23 @@ export default class LocationSelection {
         process.env[REAL_ESTATE_KEYWORD] = servers["express-real-estate"];
     }
     
+    /**
+     * Alias for update
+     */
+    envUpdateLocationUrls() {
+        this.updateLocationUrls();
+    }
+    
+    /**
+     * Set default location on environment variables
+     */
+    envSetDefaultLocations() {
+        process.env[EXPRESS_AUTHENTICATION_KEYWORD] = SERVERS_DEFAULT_LOCATION["express-authentication"];
+        process.env[BACKDOOR_SERVER_ACCESS_KEYWORD] = SERVERS_DEFAULT_LOCATION["backdoor-server-access"];
+        process.env[REAL_ESTATE_KEYWORD] = SERVERS_DEFAULT_LOCATION["express-real-estate"];
+    }
+    
+    // --- Location selection ---
     /**
      * Select a location for a given express app
      * 
@@ -270,6 +289,7 @@ export default class LocationSelection {
         });
     }
     
+    // --- Discovery ---
     /**
      * Tell servers to update
      */
