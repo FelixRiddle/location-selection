@@ -4,6 +4,7 @@ import { ArgumentParser } from "argparse";
 import { appDataFolderPath } from "felixriddle.configuration-mappings";
 
 import AppServer from "../server/AppServer";
+import testAll from "../index.test";
 
 const parser = new ArgumentParser({
     description: "Argparse example"
@@ -36,6 +37,10 @@ export default async function executeCommands() {
     
     const appServer = new AppServer();
     appServer.createFolder();
+    
+    if(args.test) {
+        testAll();
+    }
     
     // process.exit(0);
 };
